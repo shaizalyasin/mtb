@@ -1,0 +1,9 @@
+# Downloaded by ./init.sh -- large, and reproducible from the pinned tag.
+data/cgds.sql
+data/seed.sql.gz
+study/*
+!study/.gitkeep
+*.log
+node_modules
+verify-*.png
+debug-page.png

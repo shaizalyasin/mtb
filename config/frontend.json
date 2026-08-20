@@ -1,0 +1,32 @@
+{
+    "_comment": [
+        "This file is the entire installation of the MTB features. It is mounted",
+        "read-only into the official cBioPortal image and passed to it as",
+        "--frontend.config. The portal serves it back to its own frontend through",
+        "/config_service as frontendConfigOverride.",
+        "",
+        "'id' is NOT free-form. cBioPortal's router validates the tab id in the URL",
+        "path, and a custom tab id must match one of the patterns in",
+        "customTabParamValidator (src/routes.tsx at v6.4.4):",
+        "  patient/openResource_.+   <- what we use",
+        "  study/<StudyViewResourceTabPrefix>.+",
+        "  .+/customTab[0-9]",
+        "Any other id routes to an ErrorPage and the whole patient view goes blank.",
+        "",
+        "'unmountOnHide': true is deliberate -- it makes switching tabs actually",
+        "unmount the tab, so the bundle's teardown path is exercised rather than",
+        "left untested."
+    ],
+    "custom_tabs": [
+        {
+            "id": "openResource_mtbDemo",
+            "title": "MTB Demo",
+            "location": "PATIENT_PAGE",
+            "mountCallbackName": "renderMtbDemoTab",
+            "pathsToJs": ["http://localhost:8081/mtb-tools.js"],
+            "pathsToCSS": ["http://localhost:8081/mtb-tools.css"],
+            "customParameters": {},
+            "unmountOnHide": true
+        }
+    ]
+}
