@@ -55,7 +55,7 @@ services:
             --authenticate=false
             --clickhouse_mode=false
             --session.service.url=http://cbioportal-session:5001/api/sessions/my_portal/
-            --frontend.config=/mtb-config/frontend.json"
+            --frontend.config=/mtb-config/$${FRONTEND_CONFIG:-frontend.json}"
 
     cbioportal-database:
         image: ${DOCKER_IMAGE_MYSQL}

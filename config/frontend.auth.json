@@ -1,0 +1,34 @@
+{
+    "_comment": [
+        "The custom_tabs entry used with docker-compose.auth.yml.",
+        "",
+        "Two differences from frontend.json:",
+        "",
+        "1. The bundle is loaded from /mtb-tools/ on the portal's own origin,",
+        "   through the proxy, rather than cross-origin from :8081. Script",
+        "   loading works either way -- there is no CSP on the 6.4.4 image --",
+        "   but same-origin is what you want once one appears.",
+        "",
+        "2. customParameters turns on the panel that talks to the MTB backend",
+        "   through OpenResty/Keycloak. mtbBaseUrl is empty, meaning same",
+        "   origin, which is what makes the browser attach the session cookies",
+        "   by itself. This mirrors getMtbJsonStoreUrl() in the fork, which",
+        "   defaults to window.location and is only overridden when",
+        "   serverConfig.fhirspark.host is set."
+    ],
+    "custom_tabs": [
+        {
+            "id": "openResource_mtbDemo",
+            "title": "MTB Demo",
+            "location": "PATIENT_PAGE",
+            "mountCallbackName": "renderMtbDemoTab",
+            "pathsToJs": ["/mtb-tools/mtb-tools.js"],
+            "pathsToCSS": ["/mtb-tools/mtb-tools.css"],
+            "customParameters": {
+                "mtbBackend": true,
+                "mtbBaseUrl": ""
+            },
+            "unmountOnHide": true
+        }
+    ]
+}

@@ -1,0 +1,63 @@
+{
+    "realm": "mtb",
+    "enabled": true,
+    "sslRequired": "none",
+    "registrationAllowed": false,
+    "loginTheme": "keycloak",
+    "accessTokenLifespan": 1800,
+    "roles": {
+        "client": {
+            "fhirspark": [
+                {
+                    "name": "mtb_user",
+                    "description": "May write MTB therapy recommendations"
+                }
+            ]
+        }
+    },
+    "clients": [
+        {
+            "clientId": "fhirspark",
+            "name": "FhirSpark (via OpenResty)",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "bearerOnly": false,
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": true,
+            "serviceAccountsEnabled": false,
+            "secret": "fhirspark-demo-secret",
+            "redirectUris": ["http://localhost:8090/*"],
+            "webOrigins": ["http://localhost:8090"],
+            "attributes": {
+                "post.logout.redirect.uris": "http://localhost:8090/*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "profile",
+                "roles",
+                "email"
+            ]
+        }
+    ],
+    "users": [
+        {
+            "username": "mtbuser",
+            "enabled": true,
+            "emailVerified": true,
+            "firstName": "Molecular",
+            "lastName": "Tumorboard",
+            "email": "mtbuser@example.org",
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "mtbuser",
+                    "temporary": false
+                }
+            ],
+            "clientRoles": {
+                "fhirspark": ["mtb_user"]
+            }
+        }
+    ]
+}

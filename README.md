@@ -91,6 +91,103 @@ be indistinguishable from a correct one without that stall.
 `./debug.sh` dumps the same page's console, config, store state and DOM when
 something needs investigating.
 
+## The authentication overlay
+
+The base demo runs with `authenticate=false` and no backend, because the mount
+contract was the thing being proven. `docker-compose.auth.yml` layers on the
+rest of the MTB-cBioPortal authentication path so the second question -- can a
+mounted tab reach an authenticated backend? -- can be answered too.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.auth.yml up -d --build
+./verify-auth.sh
+```
+
+It adds Keycloak, an OpenResty proxy with `lua-resty-openidc`, and a small
+stand-in for FhirSpark. Everything the browser touches -- portal, Keycloak,
+bundle, backend -- is served from `http://localhost:8090`, which is the whole
+reason no token handling is needed.
+
+```
+PASS  Portal, Keycloak and the bundle are all served from one origin
+PASS  Unauthenticated GET to the MTB backend succeeds
+PASS  Unauthenticated POST is refused with 401 + loginUrl, not a redirect to Keycloak
+PASS  Tab mounted with the backend panel
+PASS  Starts unauthenticated
+PASS  The 401 opened the Keycloak login flow
+PASS  After login the write succeeded -- Molecular Tumorboard (mtbuser)
+PASS  Client roles reached the backend -- ["mtb_user"]
+PASS  The session cookie rode along without the bundle asking for it
+NOTE  cBioPortal session cookie: absent -- portal is running unauthenticated
+PASS  The recommendation was persisted
+PASS  The bundle never sent a credential of its own
+
+11/11 checks passed
+```
+
+### What it establishes
+
+**"No additional token handling" is true.** The bundle contains no
+`Authorization` header, no `credentials` option and no token code. The browser
+attaches the proxy's OIDC session cookie by itself because the request is
+same-origin, and the proxy turns that into `X-USERLOGIN` / `X-USERROLES` headers
+for the backend. The verification asserts this negatively: it watches every
+request the page makes and fails if the page ever sends a credential.
+
+**"No additional login handling" is false.** An unauthenticated write cannot
+simply be issued and forgotten. The bundle has to recognise a 401, open the
+login flow, and retry -- roughly forty lines in
+[`AuthPanel.tsx`](../mtb-clinical-tools/src/AuthPanel.tsx). Any real MTB or
+Follow-up tab needs the same, and it is worth designing once in the bundle
+rather than per feature.
+
+**It is not cBioPortal's session that authorises the write.** OpenResty runs its
+own `resty-openidc` session against Keycloak, with its own cookie. FhirSpark
+never sees OIDC at all; it trusts headers the proxy injects. cBioPortal's
+session is used for something different -- `lua_login_config.lua` reads
+`JSESSIONID` and calls `/api/studies` with it to determine study-level
+permissions.
+
+### What it does not establish
+
+That last part is untested here. With `authenticate=false` the portal issues no
+cookie at all, so there is no `JSESSIONID` to travel with the request and the
+study-permission path cannot run. Closing that gap means wiring cBioPortal's own
+Spring Security to the same Keycloak, which is a larger change than the mount
+contract needed.
+
+The backend is also a stand-in, not FhirSpark. That is deliberate: the auth
+question is decided entirely in the proxy, and FhirSpark's own behaviour --
+which is to trust the injected headers -- is reproduced exactly. What is not
+covered is FhirSpark's data model.
+
+### Design notes worth keeping
+
+Three things here were not obvious and cost time:
+
+**A redirect is the wrong answer to a `fetch`.** `resty-openidc`'s
+`authenticate()` 302s to Keycloak when there is no session. For a page
+navigation that is correct; for an XHR the browser follows it and the caller
+gets Keycloak's HTML login page instead of a usable status. The config uses
+`authenticate(opts, nil, "deny")` on the API path so callers get a 401 with a
+`loginUrl` they can act on, and keeps the redirect flow only on `/mtb/login`,
+which is opened as a top-level navigation.
+
+**The IdP needs two addresses.** The browser is redirected to
+`authorization_endpoint`, so that must be the public origin; the proxy calls
+`token_endpoint` and `jwks_uri` itself, from inside the compose network. Letting
+`resty-openidc` discover both from the public URL makes it use public addresses
+for both, and its resolver is Docker's embedded DNS, which has no answer for
+`localhost` -- so it fails with `localhost could not be resolved` while the
+browser reaches the very same URL without trouble. The discovery document is
+therefore supplied as a table with the two split apart.
+
+**`lua-resty-session` 4.x needs OpenSSL 3.** It derives keys with HKDF via
+`lua-resty-openssl`'s `kdf.new()`, which only exists when the linked OpenSSL
+provides `EVP_KDF`. OpenResty 1.25 still bundles OpenSSL 1.1.1w, and the symptom
+is a bare `attempt to call field 'new' (a nil value)` from inside the session
+library with nothing pointing at OpenSSL. The proxy builds on OpenResty 1.27.
+
 ## Adding more studies
 
 Studies are imported with cBioPortal's own `metaImport.py`, run inside the
