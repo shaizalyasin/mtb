@@ -91,6 +91,67 @@ be indistinguishable from a correct one without that stall.
 `./debug.sh` dumps the same page's console, config, store state and DOM when
 something needs investigating.
 
+## Adding more studies
+
+Studies are imported with cBioPortal's own `metaImport.py`, run inside the
+portal container — the same tool the `MTB-cbioportal` deployment uses. Nothing
+here is special to this repo.
+
+**From the public DataHub** (what `init.sh` does):
+
+```bash
+curl -fL -o study/<id>.tar.gz "https://datahub.assets.cbioportal.org/<id>.tar.gz"
+tar xzf study/<id>.tar.gz -C study && rm study/<id>.tar.gz
+./import-study.sh <id>
+```
+
+**From a local directory** — a study that is not on the DataHub, or a public
+study extended with institution-specific data:
+
+```bash
+./add-local-study.sh /path/to/study-dir
+./import-study.sh <id>
+```
+
+`add-local-study.sh` copies the directory into `study/`, finds the level that
+actually holds `meta_study.txt` (archives often unzip to `<name>/<name>/`),
+strips macOS `__MACOSX` / `._*` cruft, and appends the trailing newline that
+several `meta_*.txt` files are missing — the importer parses them line-wise and
+silently ignores an unterminated last line.
+
+### asclc_msk_2024 — the feature-testing study
+
+The copy in `MTB-cbioportal/study/asclc_msk_2024` is the public MSK study
+*extended with EQ-5D-5L timeline events*, which makes it the only study on hand
+that can exercise PROMs. Stage and import it with:
+
+```bash
+./add-local-study.sh ../MTB-cbioportal/study/asclc_msk_2024
+./import-study.sh asclc_msk_2024
+```
+
+It carries mutations, discrete CNA, structural variants, mRNA expression, rich
+timeline data and EQ-5D-5L events, so it covers considerably more of the store
+than `lgg_ucsf_2014`. Point the verification at it with:
+
+```bash
+VERIFY_STUDY_ID=asclc_msk_2024 VERIFY_PATIENT_ID=P-0012905 ./verify.sh
+```
+
+Twelve of its 31 patients have EQ-5D-5L data; `P-0012905` is one of them.
+
+> **Fixed on import:** the source study's `data_timeline_eq5d5l.txt` header reads
+> `<TAB> USUAL_ACTIVITY` with a leading space, so that attribute imports as
+> `" USUAL_ACTIVITY"`. PROMs matches attribute keys by exact string equality, so
+> the dimension would silently disappear from the charts. The copy under
+> `study/` has the space removed — **the source in `MTB-cbioportal` still has
+> it** and should be fixed there too.
+
+> **Not committed.** `study/` is gitignored. `asclc_msk_2024` is licensed
+> CC BY-NC-ND 4.0, the extended version is a derivative of it, and the
+> provenance of the EQ-5D-5L values has not been established here. Decide
+> deliberately before putting it in a public repository.
+
 ## Pushing this to GitHub
 
 Two repos, pushed separately -- that separation is the point, not an

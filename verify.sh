@@ -15,7 +15,7 @@ exec docker run --rm --network host \
     -v "$PWD":/work -w /work \
     -v mtb_demo_playwright:/pw \
     -e PORTAL_URL="http://localhost:${CBIOPORTAL_PORT:-8090}" \
-    -e STUDY_ID="${DATAHUB_STUDY}" \
+    -e STUDY_ID="${VERIFY_STUDY_ID:-${DATAHUB_STUDY}}" \
     -e PATIENT_ID="${VERIFY_PATIENT_ID:-P01}" \
     -e PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
     mcr.microsoft.com/playwright:v1.49.1-jammy \
