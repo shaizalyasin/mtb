@@ -1,4 +1,4 @@
-# mtb-decoupling-demo
+# mtb-demo
 
 Official cBioPortal **6.4.4**, unmodified, with our MTB features injected as a
 separately served JavaScript bundle — no fork, no patched frontend, no rebuilt
@@ -30,9 +30,23 @@ Upgrading cBioPortal is editing `DOCKER_IMAGE_CBIOPORTAL` in [`.env`](.env) and
 re-running. The features come along untouched because they were never in the
 portal to begin with.
 
+## Prerequisites
+
+Docker, and **both repos checked out side by side**:
+
+```
+some-parent-dir/
+  mtb-demo/            <- you are here
+  mtb-clinical-tools/  <- the bundle, built as a compose step
+```
+
+The path is set by `MTB_TOOLS_CONTEXT` in [`.env`](.env) and defaults to
+`../mtb-clinical-tools`. Point it elsewhere if you lay the checkouts out
+differently.
+
 ## Running it
 
-Requires Docker. First run downloads ~65MB and takes several minutes, mostly
+First run downloads ~65MB and takes several minutes, mostly
 seeding the database.
 
 ```bash
@@ -76,6 +90,57 @@ be indistinguishable from a correct one without that stall.
 
 `./debug.sh` dumps the same page's console, config, store state and DOM when
 something needs investigating.
+
+## Pushing this to GitHub
+
+Two repos, pushed separately -- that separation is the point, not an
+inconvenience:
+
+```bash
+# in mtb-clinical-tools/
+git remote add origin git@github.com:<org>/mtb-clinical-tools.git
+git push -u origin main
+
+# in mtb-demo/
+git remote add origin git@github.com:<org>/mtb-demo.git
+git push -u origin main
+```
+
+Nothing needs to be built or published for a reviewer to try it -- they clone
+both repos side by side and run the three commands under "Running it". The
+bundle is built from source by compose, so there is no artifact to host and no
+registry to configure.
+
+### Continuous verification
+
+[`.github/workflows/verify.yml`](.github/workflows/verify.yml) runs the whole
+thing on every push: brings up the official image, injects the bundle by config
+alone, and runs `verify.sh` in a real browser. Screenshots and logs are uploaded
+as build artifacts, so a failure shows you the actual page rather than a stack
+trace.
+
+It checks out `<owner>/mtb-clinical-tools` at `main` by default. Override with
+repository variables if yours is named or branched differently:
+
+| Variable | Purpose |
+| --- | --- |
+| `MTB_TOOLS_REPO` | e.g. `my-org/mtb-tools` |
+| `MTB_TOOLS_REF` | branch or tag of the bundle to test against |
+
+### Testing a cBioPortal upgrade before committing to it
+
+This is the part that replaces the fork rebase. Run the workflow manually
+(**Actions -> verify -> Run workflow**) and give it a candidate image:
+
+```
+cbioportal/cbioportal:6.4.5
+```
+
+Green means the mount contract still holds and the upgrade is a one-line edit to
+`.env`. Red names the exact criterion that broke, and
+[`../mtb-clinical-tools/CONTRACT.md`](../mtb-clinical-tools/CONTRACT.md) says
+where in the upstream source to look. Either way you learn it in minutes,
+without touching a branch.
 
 ## How it works
 

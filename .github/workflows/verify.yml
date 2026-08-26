@@ -1,0 +1,79 @@
+# Proves the decoupling claim on every push: bring up the official cBioPortal
+# image unmodified, inject the bundle by config alone, and assert the tab mounts
+# and reads the live store.
+#
+# The workflow_dispatch input is the upgrade check from
+# mtb-clinical-tools/CONTRACT.md, automated. To evaluate a new cBioPortal
+# release, run this with that tag. Green means the mount contract still holds
+# and the upgrade is a one-line change to .env. Red names the criterion that
+# broke.
+name: verify
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      cbioportal_image:
+        description: 'cBioPortal image to test against (e.g. cbioportal/cbioportal:6.4.5)'
+        required: false
+        default: ''
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out the deployment repo
+        uses: actions/checkout@v4
+
+      # The bundle lives in its own repo precisely because it has its own
+      # lifecycle. CI has to bring the two together, the same way a developer
+      # checks them out side by side.
+      - name: Check out the bundle repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.MTB_TOOLS_REPO || format('{0}/mtb-clinical-tools', github.repository_owner) }}
+          ref: ${{ vars.MTB_TOOLS_REF || 'main' }}
+          path: mtb-clinical-tools
+
+      - name: Point the deployment at the checked-out bundle
+        run: echo "MTB_TOOLS_CONTEXT=./mtb-clinical-tools" >> .env
+
+      - name: Override the cBioPortal image
+        if: inputs.cbioportal_image != ''
+        run: |
+          sed -i "s|^DOCKER_IMAGE_CBIOPORTAL=.*|DOCKER_IMAGE_CBIOPORTAL=${{ inputs.cbioportal_image }}|" .env
+          grep '^DOCKER_IMAGE_CBIOPORTAL=' .env
+
+      - name: Download schema, seed database and demo study
+        run: ./init.sh
+
+      - name: Start the stack
+        run: docker compose up -d --build --wait --wait-timeout 1200
+
+      - name: Import the demo study
+        run: ./import-study.sh
+
+      - name: Wait for the portal
+        run: timeout 300 bash -c 'until curl -sf http://localhost:8090/api/studies >/dev/null; do sleep 5; done'
+
+      - name: Verify the mount contract
+        run: ./verify.sh
+
+      - name: Collect diagnostics
+        if: failure()
+        run: |
+          ./debug.sh || true
+          docker compose logs --tail 200 > compose-logs.txt || true
+
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-output
+          path: |
+            *.png
+            compose-logs.txt
+          if-no-files-found: ignore

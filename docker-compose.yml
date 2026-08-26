@@ -6,6 +6,12 @@
 # Adapted from the official cbioportal-docker-compose at the last MySQL-era
 # revision (a3aa5c9, cBioPortal 6.4.x), trimmed to what the demo needs.
 
+# Pinned so the project name -- and therefore the volume and network names --
+# does not silently change if the checkout directory is renamed. Without it
+# Compose derives the name from the directory, and a rename orphans the seeded
+# database volume.
+name: mtb-demo
+
 services:
     cbioportal:
         image: ${DOCKER_IMAGE_CBIOPORTAL}
