@@ -124,17 +124,15 @@ login wired to Keycloak.
 
 ## Adding studies
 
-Studies are imported with cBioPortal's own `metaImport.py`, run inside the
-portal container.
+`init.sh` downloads one demo study. To add another, put its directory under
+`study/` and import it:
 
 ```bash
-./import-study.sh <study-id>              # a study already in study/
-./add-local-study.sh <path-to-study-dir>  # stage one that is not on the DataHub
+./import-study.sh <study-id>
 ```
 
-`add-local-study.sh` copies a study into `study/` and fixes the things that
-otherwise fail silently: archives that unzip to a doubled directory, macOS
-`__MACOSX` cruft, and `meta_*.txt` files missing a trailing newline.
+Import runs cBioPortal's own `metaImport.py` inside the portal container, so a
+study that imports there imports here.
 
 `study/` and `data/` are not committed.
 
