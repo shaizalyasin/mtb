@@ -8,7 +8,7 @@ meant to become "change the image tag and redeploy", and this repository is the
 evidence that it can.
 
 The features themselves live in the sibling repository
-[`mtb-clinical-tools`](../mtb-clinical-tools). This one is only the deployment:
+[`mtb-clinical-tools`](https://github.com/shaizalyasin/mtb-clinical-tools). This one is only the deployment:
 the portal, its database, and the configuration that tells the portal where to
 find our bundle.
 
@@ -167,4 +167,4 @@ VERIFY_STUDY_ID=asclc_msk_2024 VERIFY_PATIENT_ID=P-0012905 ./verify.sh
   picks up the matching seed automatically.
 
 The full list of what to re-check when the cBioPortal version changes is in
-[`mtb-clinical-tools/CONTRACT.md`](../mtb-clinical-tools/CONTRACT.md).
+[`mtb-clinical-tools/CONTRACT.md`](https://github.com/shaizalyasin/mtb-clinical-tools/blob/main/CONTRACT.md).
