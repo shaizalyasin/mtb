@@ -10,12 +10,12 @@
 # does not silently change if the checkout directory is renamed. Without it
 # Compose derives the name from the directory, and a rename orphans the seeded
 # database volume.
-name: mtb-demo
+name: mtb
 
 services:
     cbioportal:
         image: ${DOCKER_IMAGE_CBIOPORTAL}
-        container_name: mtb-demo-cbioportal
+        container_name: mtb-cbioportal
         restart: unless-stopped
         environment:
             PORTAL_HOME: /cbioportal-webapp
@@ -40,7 +40,7 @@ services:
             cbioportal-session:
                 condition: service_started
         networks:
-            - mtb-demo-net
+            - mtb-net
         # Standard official launch line, plus one argument: --frontend.config.
         # That single flag is the whole of "installing" the MTB features.
         #
@@ -55,11 +55,11 @@ services:
             --authenticate=false
             --clickhouse_mode=false
             --session.service.url=http://cbioportal-session:5001/api/sessions/my_portal/
-            --frontend.config=/mtb-config/$${FRONTEND_CONFIG:-frontend.json}"
+            --frontend.config=$${FRONTEND_CONFIG:-/mtb-config/frontend.json}"
 
     cbioportal-database:
         image: ${DOCKER_IMAGE_MYSQL}
-        container_name: mtb-demo-database
+        container_name: mtb-database
         restart: unless-stopped
         environment:
             MYSQL_DATABASE: ${DB_MYSQL_DB_NAME}
@@ -71,10 +71,10 @@ services:
             # the pinned portal image itself, so it can never drift from it.
             - ./data/cgds.sql:/docker-entrypoint-initdb.d/01-cgds.sql:ro
             - ./data/seed.sql.gz:/docker-entrypoint-initdb.d/02-seed.sql.gz:ro
-            - mtb_demo_mysql:/var/lib/mysql
+            - mtb_mysql:/var/lib/mysql
         command: --local-infile=1
         networks:
-            - mtb-demo-net
+            - mtb-net
         healthcheck:
             # The seed import is slow; "container running" is not "database
             # ready". Wait until the reference data is actually there.
@@ -96,7 +96,7 @@ services:
 
     cbioportal-session:
         image: ${DOCKER_IMAGE_SESSION_SERVICE}
-        container_name: mtb-demo-session
+        container_name: mtb-session
         restart: unless-stopped
         environment:
             SERVER_PORT: 5001
@@ -104,18 +104,18 @@ services:
         depends_on:
             - cbioportal-session-database
         networks:
-            - mtb-demo-net
+            - mtb-net
 
     cbioportal-session-database:
         image: ${DOCKER_IMAGE_MONGO}
-        container_name: mtb-demo-session-database
+        container_name: mtb-session-database
         restart: unless-stopped
         environment:
             MONGO_INITDB_DATABASE: session_service
         volumes:
-            - mtb_demo_mongo:/data/db
+            - mtb_mongo:/data/db
         networks:
-            - mtb-demo-net
+            - mtb-net
 
     # The whole of "our features", as far as the deployment is concerned: a
     # static file server. Built from the sibling bundle repo so `up --build`
@@ -126,16 +126,16 @@ services:
         build:
             context: ${MTB_TOOLS_CONTEXT:-../mtb-clinical-tools}
         image: mtb-clinical-tools:local
-        container_name: mtb-demo-tools
+        container_name: mtb-tools
         restart: unless-stopped
         ports:
             - '${MTB_TOOLS_PORT:-8081}:80'
         networks:
-            - mtb-demo-net
+            - mtb-net
 
 networks:
-    mtb-demo-net:
+    mtb-net:
 
 volumes:
-    mtb_demo_mysql:
-    mtb_demo_mongo:
+    mtb_mysql:
+    mtb_mongo:

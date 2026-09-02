@@ -13,7 +13,7 @@ set -a && . ./.env && set +a
 # only the first run pays for the install.
 exec docker run --rm --network host \
     -v "$PWD":/work -w /work \
-    -v mtb_demo_playwright:/pw \
+    -v mtb_playwright:/pw \
     -e PORTAL_URL="http://localhost:${CBIOPORTAL_PORT:-8090}" \
     -e STUDY_ID="${VERIFY_STUDY_ID:-${DATAHUB_STUDY}}" \
     -e PATIENT_ID="${VERIFY_PATIENT_ID:-P01}" \

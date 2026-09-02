@@ -1,6 +1,6 @@
 {
     "_comment": [
-        "The custom_tabs entry used with docker-compose.auth.yml.",
+        "The custom_tabs entry used with auth/docker-compose.yml.",
         "",
         "Two differences from frontend.json:",
         "",

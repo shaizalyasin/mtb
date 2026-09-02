@@ -13,3 +13,4 @@ config/application.properties
 
 .commitmsg.tmp
 verify-auth.png
+.commitmsg
