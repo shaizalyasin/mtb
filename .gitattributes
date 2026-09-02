@@ -1,3 +1,5 @@
-# Shell scripts must keep LF endings; CRLF makes them unrunnable on Linux.
+# Keep text files LF in the repo so GitHub UI edits and local edits do not
+# collide as whole-file conflicts.
+* text=auto eol=lf
 *.sh text eol=lf
 *.mjs text eol=lf

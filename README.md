@@ -124,34 +124,19 @@ login wired to Keycloak.
 
 ## Adding studies
 
-Studies are imported with cBioPortal's own `metaImport.py`, the same tool the
-existing MTB deployment uses.
+Studies are imported with cBioPortal's own `metaImport.py`, run inside the
+portal container.
 
 ```bash
-./import-study.sh <study-id>              # something already in study/
-./add-local-study.sh <path-to-study-dir>  # stage a study not on the DataHub
+./import-study.sh <study-id>              # a study already in study/
+./add-local-study.sh <path-to-study-dir>  # stage one that is not on the DataHub
 ```
 
-`add-local-study.sh` handles the things that otherwise fail silently: archives
-that unzip to a doubled directory, macOS `__MACOSX` cruft, and `meta_*.txt` files
-missing a trailing newline, which the importer drops.
+`add-local-study.sh` copies a study into `study/` and fixes the things that
+otherwise fail silently: archives that unzip to a doubled directory, macOS
+`__MACOSX` cruft, and `meta_*.txt` files missing a trailing newline.
 
-For PROMs testing, `asclc_msk_2024` in the MTB-cBioPortal repository is the
-public study extended with EQ-5D-5L timeline events:
-
-```bash
-./add-local-study.sh ../MTB-cbioportal/study/asclc_msk_2024
-./import-study.sh asclc_msk_2024
-VERIFY_STUDY_ID=asclc_msk_2024 VERIFY_PATIENT_ID=P-0012905 ./verify.sh
-```
-
-> Its `data_timeline_eq5d5l.txt` header has a leading space before
-> `USUAL_ACTIVITY`. PROMs matches attribute names exactly, so that dimension
-> silently disappears from the charts. `add-local-study.sh` does not fix this —
-> the source study needs correcting.
-
-> `study/` is not committed. `asclc_msk_2024` is CC BY-NC-ND and the provenance
-> of its EQ-5D-5L values is not established here.
+`study/` and `data/` are not committed.
 
 ## Things worth knowing before changing anything
 
