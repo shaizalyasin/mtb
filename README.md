@@ -14,7 +14,7 @@ find our bundle.
 
 ## Running it
 
-**Requirements:** Linux, or Windows with WSL2 — run everything from inside the
+**Requirements:** Linux, or Windows with WSL2. Run everything from inside the
 Linux filesystem. Docker Engine with Compose v2, and about 15 GB free disk.
 
 Only this repository needs cloning; Docker builds the bundle straight from its
@@ -40,9 +40,8 @@ To work on the bundle rather than just run it, clone
 alongside this repository and set `MTB_TOOLS_CONTEXT=../mtb-clinical-tools` in
 [`.env`](.env), so compose builds your checkout instead of GitHub.
 
-Then open
-<http://localhost:8090/patient?studyId=lgg_ucsf_2014&caseId=P01>
-and click the **MTB Demo** tab.
+Then open <http://localhost:8090>, pick a patient from the imported study, and
+click the **MTB Demo** tab.
 
 Change `CBIOPORTAL_PORT` in [`.env`](.env) if 8090 is taken.
 
@@ -61,7 +60,7 @@ docker compose down -v    # stop and wipe it -- next start re-seeds and you
 ```
 
 Run it with the stack up and a study imported. It drives a real headless browser through every claim and prints a line each. No
-local Node or browser needed — it runs in a container.
+local Node or browser needed; it runs in a container.
 
 ```
 PASS  Custom tab appears in the Patient View tab bar
@@ -87,7 +86,7 @@ them:
   by something other than the store being tested.
 
 The same suite runs in CI on every push, and can be pointed at any cBioPortal
-image tag from the Actions tab — which is how an upgrade would be evaluated
+image tag from the Actions tab, which is how an upgrade would be evaluated
 before committing to it.
 
 ## How the injection works
@@ -109,10 +108,10 @@ cBioPortal deployment.
 | Path | What it is |
 | --- | --- |
 | [`docker-compose.yml`](docker-compose.yml) | The portal, its database, session service, and a static server for the bundle |
-| [`config/frontend.json`](config/frontend.json) | **The injection point** — the `custom_tabs` entry |
+| [`config/frontend.json`](config/frontend.json) | **The injection point**: the `custom_tabs` entry |
 | [`init.sh`](init.sh) | Downloads the schema, seed database and demo study |
 | [`verify.sh`](verify.sh), `verify.mjs` | The browser verification |
-| [`auth/`](auth/) | Optional Keycloak/OpenResty overlay — see below |
+| [`auth/`](auth/) | Optional Keycloak/OpenResty overlay, see below |
 | `data/`, `study/` | Downloaded content, not committed |
 
 ## The authentication overlay (optional)
