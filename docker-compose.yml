@@ -124,7 +124,7 @@ services:
         # The Dockerfile lives in the bundle repo -- how the bundle is built is
         # the bundle's business, not the deployment's.
         build:
-            context: ${MTB_TOOLS_CONTEXT:-../mtb-clinical-tools}
+            context: ${MTB_TOOLS_CONTEXT:-https://github.com/shaizalyasin/mtb-clinical-tools.git}
         image: mtb-clinical-tools:local
         container_name: mtb-tools
         restart: unless-stopped

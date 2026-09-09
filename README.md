@@ -14,11 +14,13 @@ find our bundle.
 
 ## Running it
 
-Needs Docker (with Compose v2) and about 15 GB free disk. Both repositories must
-sit side by side — the deployment builds the bundle from `../mtb-clinical-tools`:
+**Requirements:** Linux, or Windows with WSL2 — run everything from inside the
+Linux filesystem. Docker Engine with Compose v2, and about 15 GB free disk.
+
+Only this repository needs cloning; Docker builds the bundle straight from its
+public GitHub repository.
 
 ```bash
-git clone https://github.com/shaizalyasin/mtb-clinical-tools.git
 git clone https://github.com/shaizalyasin/mtb.git
 cd mtb
 ```
@@ -30,7 +32,13 @@ docker compose up -d --build    # first boot seeds the database, a few minutes
 ```
 
 The first run takes roughly ten minutes, most of it pulling images and loading
-the seed database. Later runs start in seconds.
+the seed database. `import-study.sh` waits for the portal itself, so the three
+commands can be run one after another. Later runs start in seconds.
+
+To work on the bundle rather than just run it, clone
+[`mtb-clinical-tools`](https://github.com/shaizalyasin/mtb-clinical-tools)
+alongside this repository and set `MTB_TOOLS_CONTEXT=../mtb-clinical-tools` in
+[`.env`](.env), so compose builds your checkout instead of GitHub.
 
 Then open
 <http://localhost:8090/patient?studyId=lgg_ucsf_2014&caseId=P01>
