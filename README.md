@@ -14,12 +14,13 @@ find our bundle.
 
 ## Running it
 
-Needs Docker, and both repositories checked out side by side:
+Needs Docker (with Compose v2) and about 15 GB free disk. Both repositories must
+sit side by side — the deployment builds the bundle from `../mtb-clinical-tools`:
 
-```
-some-parent/
-  mtb/                  <- you are here
-  mtb-clinical-tools/   <- the bundle, built as a compose step
+```bash
+git clone https://github.com/shaizalyasin/mtb-clinical-tools.git
+git clone https://github.com/shaizalyasin/mtb.git
+cd mtb
 ```
 
 ```bash
@@ -28,11 +29,22 @@ docker compose up -d --build    # first boot seeds the database, a few minutes
 ./import-study.sh               # cBioPortal will not render with zero studies
 ```
 
+The first run takes roughly ten minutes, most of it pulling images and loading
+the seed database. Later runs start in seconds.
+
 Then open
 <http://localhost:8090/patient?studyId=lgg_ucsf_2014&caseId=P01>
 and click the **MTB Demo** tab.
 
 Change `CBIOPORTAL_PORT` in [`.env`](.env) if 8090 is taken.
+
+Stopping and resetting:
+
+```bash
+docker compose down       # stop, keep the database
+docker compose down -v    # stop and wipe it -- next start re-seeds and you
+                          # will need ./import-study.sh again
+```
 
 ## Verifying it
 
@@ -40,7 +52,7 @@ Change `CBIOPORTAL_PORT` in [`.env`](.env) if 8090 is taken.
 ./verify.sh
 ```
 
-Drives a real headless browser through every claim and prints a line each. No
+Run it with the stack up and a study imported. It drives a real headless browser through every claim and prints a line each. No
 local Node or browser needed — it runs in a container.
 
 ```
