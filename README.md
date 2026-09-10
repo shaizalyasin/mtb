@@ -15,7 +15,7 @@ find our bundle.
 ## Running it
 
 **Requirements:** Linux, or Windows with WSL2. Run everything from inside the
-Linux filesystem. Docker Engine with Compose v2, and about 15 GB free disk.
+Linux filesystem. Docker Engine with Compose v2, and about 8 GB free disk.
 
 Only this repository needs cloning; Docker builds the bundle straight from its
 public GitHub repository.
@@ -26,7 +26,7 @@ cd mtb
 ```
 
 ```bash
-./init.sh                       # schema, seed database and a demo study (~65MB)
+./init.sh                       # schema, seed database and a demo study (~25MB)
 docker compose up -d --build    # first boot seeds the database, a few minutes
 ./import-study.sh               # cBioPortal will not render with zero studies
 ```
@@ -43,9 +43,12 @@ alongside this repository and set `MTB_TOOLS_CONTEXT=../mtb-clinical-tools` in
 Then open <http://localhost:9090>, pick a patient from the imported study, and
 click the **MTB Demo** tab.
 
-Both ports live in [`.env`](.env) as `CBIOPORTAL_PORT` and `MTB_TOOLS_PORT`. Change them there and re-run `./init.sh`, which regenerates `config/frontend.json` so the tab keeps pointing at the right place.
+Both ports live in [`.env`](.env). Change them there and re-run `./init.sh`, which
+regenerates `config/frontend.json` to match.
 
-On Windows, Hyper-V reserves TCP ranges, and binding inside one fails with *forbidden by its access permissions* even though nothing is listening. `netsh interface ipv4 show excludedportrange protocol=tcp` lists them; pick ports outside those ranges.
+On Windows, binding can fail with *forbidden by its access permissions* because
+Hyper-V reserves TCP ranges. List them with
+`netsh interface ipv4 show excludedportrange protocol=tcp` and pick a port outside.
 
 Stopping and resetting:
 
@@ -77,15 +80,10 @@ PASS  No MTB-related console errors
 8/8 checks passed
 ```
 
-Two of those are built so they could actually fail, which is the point of having
-them:
-
-- The mutation count normally resolves faster than a test can observe, and a
-  value copied once at mount time would look identical to a live one. So the run
-  **holds the response back until after the tab has mounted**, then requires a
-  loading state followed by the real number, in one continuous mount.
-- The count is cross-checked against cBioPortal's REST API, so it is corroborated
-  by something other than the store being tested.
+The reactivity check is built so it can fail: the run **holds the mutation
+response back until after the tab has mounted**, so the tab must show a loading
+state and update itself. A value copied at mount time would not. The count is
+cross-checked against the REST API.
 
 The same suite runs in CI on every push, and can be pointed at any cBioPortal
 image tag from the Actions tab, which is how an upgrade would be evaluated
@@ -135,18 +133,13 @@ URLs in [`auth/realm-export.json`](auth/realm-export.json) to match. Keycloak
 validates redirect URIs against the exact origin, so a mismatch fails the login
 rather than falling back.
 
-What it establishes:
+It establishes that the bundle needs no token handling, since the browser attaches
+the session cookie on a same-origin request, but does need login handling: an
+unauthenticated write returns 401 with a `loginUrl` to act on.
 
-- **No token handling is needed.** The bundle sends no credential; the browser
-  attaches the session cookie itself because the request is same-origin. The test
-  asserts this negatively, by inspecting every request the page makes.
-- **Login handling *is* needed.** An unauthenticated write returns 401 with a
-  `loginUrl`; the bundle has to open that flow and retry. The current fork has no
-  such handling, because its deployment runs with `LOGINREQUIRED=false`.
-
-Not covered: real FhirSpark (this is a stand-in reproducing its auth behaviour,
-not its data model), and study-level permissions, which need the portal's own
-login wired to Keycloak.
+Not covered: real FhirSpark (this is a stand-in for its auth behaviour, not its
+data model), and study-level permissions, which need the portal's own login wired
+to Keycloak.
 
 ## Adding studies
 
