@@ -40,10 +40,12 @@ To work on the bundle rather than just run it, clone
 alongside this repository and set `MTB_TOOLS_CONTEXT=../mtb-clinical-tools` in
 [`.env`](.env), so compose builds your checkout instead of GitHub.
 
-Then open <http://localhost:8090>, pick a patient from the imported study, and
+Then open <http://localhost:9090>, pick a patient from the imported study, and
 click the **MTB Demo** tab.
 
-Change `CBIOPORTAL_PORT` in [`.env`](.env) if 8090 is taken.
+Both ports live in [`.env`](.env) as `CBIOPORTAL_PORT` and `MTB_TOOLS_PORT`. Change them there and re-run `./init.sh`, which regenerates `config/frontend.json` so the tab keeps pointing at the right place.
+
+On Windows, Hyper-V reserves TCP ranges, and binding inside one fails with *forbidden by its access permissions* even though nothing is listening. `netsh interface ipv4 show excludedportrange protocol=tcp` lists them; pick ports outside those ranges.
 
 Stopping and resetting:
 
@@ -64,7 +66,7 @@ local Node or browser needed; it runs in a container.
 
 ```
 PASS  Custom tab appears in the Patient View tab bar
-PASS  Bundle loaded from :8081 and mountCallbackName resolved off window
+PASS  Bundle loaded cross-origin and mountCallbackName resolved off window
 PASS  Mutation count shows a pending state while the store is fetching
 PASS  Mutation count went pending -> real number, and matches the REST API
 PASS  Study / patient / sample identifiers read from the live store
@@ -93,7 +95,7 @@ before committing to it.
 
 `custom_tabs` is JavaScript injection into cBioPortal's own page, not an iframe:
 
-1. The backend reads [`config/frontend.json`](config/frontend.json), passed to it
+1. The backend reads `config/frontend.json`, passed to it
    as `--frontend.config`, and serves it to its own frontend.
 2. The frontend adds a tab, loads the bundle's CSS and JS, then calls the global
    named by `mountCallbackName`.
@@ -108,7 +110,7 @@ cBioPortal deployment.
 | Path | What it is |
 | --- | --- |
 | [`docker-compose.yml`](docker-compose.yml) | The portal, its database, session service, and a static server for the bundle |
-| [`config/frontend.json`](config/frontend.json) | **The injection point**: the `custom_tabs` entry |
+| [`config/frontend.json.template`](config/frontend.json.template) | **The injection point**: the `custom_tabs` entry. `init.sh` renders it into `config/frontend.json` |
 | [`init.sh`](init.sh) | Downloads the schema, seed database and demo study |
 | [`verify.sh`](verify.sh), `verify.mjs` | The browser verification |
 | [`auth/`](auth/) | Optional Keycloak/OpenResty overlay, see below |
@@ -127,6 +129,11 @@ docker compose -f docker-compose.yml -f auth/docker-compose.yml up -d --build
 
 It adds Keycloak, an OpenResty proxy with `lua-resty-openidc`, and a stand-in for
 FhirSpark, all on one origin. Demo login is `mtbuser` / `mtbuser`.
+
+If you change `CBIOPORTAL_PORT`, update `PUBLIC_URL` in [`.env`](.env) and the
+URLs in [`auth/realm-export.json`](auth/realm-export.json) to match. Keycloak
+validates redirect URIs against the exact origin, so a mismatch fails the login
+rather than falling back.
 
 What it establishes:
 

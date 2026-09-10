@@ -73,6 +73,14 @@ else
     rm -f "study/${DATAHUB_STUDY}.tar.gz"
 fi
 
+# The bundle is fetched by the *browser*, so frontend.json needs a URL that
+# resolves outside the compose network. Rendering it here, rather than
+# committing a fixed one, means changing MTB_TOOLS_PORT cannot leave the tab
+# pointing at a dead port.
+sed "s|__MTB_TOOLS_BASE_URL__|${MTB_TOOLS_BASE_URL}|g" \
+    config/frontend.json.template > config/frontend.json
+echo "Wrote config/frontend.json (bundle at ${MTB_TOOLS_BASE_URL})"
+
 echo
 echo "Done. Next:"
 echo "  docker compose up -d --build     # first boot seeds the DB, takes a few minutes"

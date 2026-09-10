@@ -9,7 +9,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 set -a && . ./.env && set +a
 
 STUDY="${1:-${DATAHUB_STUDY}}"
-PORT="${CBIOPORTAL_PORT:-8090}"
+PORT="${CBIOPORTAL_PORT:-9090}"
 
 # `docker compose up -d` returns within seconds, but the database spends several
 # minutes loading the seed and the portal does not answer until that finishes.

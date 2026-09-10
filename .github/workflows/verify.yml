@@ -57,7 +57,9 @@ jobs:
         run: ./import-study.sh
 
       - name: Wait for the portal
-        run: timeout 300 bash -c 'until curl -sf http://localhost:8090/api/studies >/dev/null; do sleep 5; done'
+        run: |
+          set -a && . ./.env && set +a
+          timeout 300 bash -c "until curl -sf http://localhost:${CBIOPORTAL_PORT}/api/studies >/dev/null; do sleep 5; done"
 
       - name: Verify the mount contract
         run: ./verify.sh

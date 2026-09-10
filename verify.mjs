@@ -11,7 +11,7 @@
  */
 import { chromium } from 'playwright';
 
-const PORTAL = process.env.PORTAL_URL || 'http://localhost:8090';
+const PORTAL = process.env.PORTAL_URL || 'http://localhost:9090';
 const STUDY = process.env.STUDY_ID || 'lgg_ucsf_2014';
 const PATIENT = process.env.PATIENT_ID || 'P01';
 const MAX_STALL_MS = 45000;
@@ -59,7 +59,22 @@ check('Custom tab appears in the Patient View tab bar', true);
 
 await tab(page, 'MTB Demo').click();
 await page.waitForSelector(PANEL, { timeout: 60000 });
-check('Bundle loaded from :8081 and mountCallbackName resolved off window', true);
+
+// Read back where the bundle was actually fetched from, rather than asserting
+// a port this file happens to know. If frontend.json and the published port
+// ever drift apart, the panel never appears and this reports the URL that was
+// tried, which is the thing worth knowing.
+const bundleSrc = await page.evaluate(() => {
+    const s = [...document.querySelectorAll('script[src]')].find(n =>
+        n.src.includes('mtb-tools.js')
+    );
+    return s ? s.src : null;
+});
+check(
+    'Bundle loaded cross-origin and mountCallbackName resolved off window',
+    Boolean(bundleSrc),
+    bundleSrc ?? 'no mtb-tools.js script tag found'
+);
 
 // --- 2. pending -> real value, within one continuous mount ---------------
 const pendingSeen = await page

@@ -15,7 +15,7 @@ set -a && . ./.env && set +a
 exec docker run --rm --network host \
     -v "$PWD":/work -w /work \
     -v mtb_playwright:/pw \
-    -e PORTAL_URL="http://localhost:${CBIOPORTAL_PORT:-8090}" \
+    -e PORTAL_URL="http://localhost:${CBIOPORTAL_PORT:-9090}" \
     -e STUDY_ID="${VERIFY_STUDY_ID:-${DATAHUB_STUDY}}" \
     -e PATIENT_ID="${VERIFY_PATIENT_ID:-P01}" \
     -e PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \

@@ -8,7 +8,7 @@
  */
 import { chromium } from 'playwright';
 
-const PORTAL = process.env.PORTAL_URL || 'http://localhost:8090';
+const PORTAL = process.env.PORTAL_URL || 'http://localhost:9090';
 const STUDY = process.env.STUDY_ID || 'lgg_ucsf_2014';
 const PATIENT = process.env.PATIENT_ID || 'P01';
 const KC_USER = process.env.KC_USER || 'mtbuser';

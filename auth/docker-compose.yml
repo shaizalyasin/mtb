@@ -37,7 +37,7 @@ services:
             # keeps the token issuer identical for the browser and for the
             # proxy, which is the usual reason Keycloak-behind-a-proxy fails.
             KC_HTTP_RELATIVE_PATH: /auth
-            KC_HOSTNAME: ${PUBLIC_URL:-http://localhost:8090}/auth
+            KC_HOSTNAME: ${PUBLIC_URL:-http://localhost:9090}/auth
             KC_HOSTNAME_STRICT: 'false'
             KC_HTTP_ENABLED: 'true'
             KC_PROXY_HEADERS: xforwarded
@@ -69,14 +69,16 @@ services:
         container_name: mtb-proxy
         restart: unless-stopped
         environment:
-            PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8090}
+            PUBLIC_URL: ${PUBLIC_URL:-http://localhost:9090}
             KEYCLOAK_INTERNAL: http://keycloak:8080
             KEYCLOAK_CLIENT: fhirspark
             KEYCLOAK_SECRET: fhirspark-demo-secret
-        # Host and container port are identical on purpose -- see the
-        # listen directive in auth/proxy/conf.d/default.conf.
+        # Host and container port are identical on purpose: the proxy calls
+        # Keycloak's token endpoint itself using PUBLIC_URL, so that origin
+        # must resolve the same inside the container as in the browser.
+        # entrypoint.sh derives the listen port from PUBLIC_URL.
         ports:
-            - '8090:8090'
+            - '${CBIOPORTAL_PORT:-9090}:${CBIOPORTAL_PORT:-9090}'
         depends_on:
             keycloak:
                 condition: service_started

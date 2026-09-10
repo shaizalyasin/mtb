@@ -27,10 +27,10 @@
             "directAccessGrantsEnabled": true,
             "serviceAccountsEnabled": false,
             "secret": "fhirspark-demo-secret",
-            "redirectUris": ["http://localhost:8090/*"],
-            "webOrigins": ["http://localhost:8090"],
+            "redirectUris": ["http://localhost:9090/*"],
+            "webOrigins": ["http://localhost:9090"],
             "attributes": {
-                "post.logout.redirect.uris": "http://localhost:8090/*"
+                "post.logout.redirect.uris": "http://localhost:9090/*"
             },
             "defaultClientScopes": [
                 "web-origins",

@@ -23,8 +23,8 @@
             "title": "MTB Demo",
             "location": "PATIENT_PAGE",
             "mountCallbackName": "renderMtbDemoTab",
-            "pathsToJs": ["http://localhost:8081/mtb-tools.js"],
-            "pathsToCSS": ["http://localhost:8081/mtb-tools.css"],
+            "pathsToJs": ["__MTB_TOOLS_BASE_URL__/mtb-tools.js"],
+            "pathsToCSS": ["__MTB_TOOLS_BASE_URL__/mtb-tools.css"],
             "customParameters": {},
             "unmountOnHide": true
         }

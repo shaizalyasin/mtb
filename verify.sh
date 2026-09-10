@@ -2,8 +2,8 @@
 # Runs verify.mjs against the running stack in a throwaway Playwright container,
 # so this needs no local node or browser install.
 #
-# --network host is what lets the browser reach both localhost:8090 (portal) and
-# localhost:8081 (bundle), exactly as a human's browser would.
+# --network host is what lets the browser reach both localhost:9090 (portal) and
+# localhost:9091 (bundle), exactly as a human's browser would.
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -14,7 +14,7 @@ set -a && . ./.env && set +a
 exec docker run --rm --network host \
     -v "$PWD":/work -w /work \
     -v mtb_playwright:/pw \
-    -e PORTAL_URL="http://localhost:${CBIOPORTAL_PORT:-8090}" \
+    -e PORTAL_URL="http://localhost:${CBIOPORTAL_PORT:-9090}" \
     -e STUDY_ID="${VERIFY_STUDY_ID:-${DATAHUB_STUDY}}" \
     -e PATIENT_ID="${VERIFY_PATIENT_ID:-P01}" \
     -e PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
