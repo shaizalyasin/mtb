@@ -141,6 +141,35 @@ Not covered: real FhirSpark (this is a stand-in for its auth behaviour, not its
 data model), and study-level permissions, which need the portal's own login wired
 to Keycloak.
 
+## The Prognosis tab (optional)
+
+Everything under [`risk/`](risk/) adds a second tab that scores the open
+patient with the survival model in
+[`mtb-survival-model`](https://github.com/shaizalyasin/mtb-survival-model).
+Like `auth/`, it is an overlay, because the base demo answers one question and
+should stay runnable without anything not needed to answer it.
+
+```bash
+docker compose -f docker-compose.yml -f risk/docker-compose.yml up -d --build
+```
+
+Without the overlay the tab still appears and reports that the service is
+unreachable, which is the intended behaviour rather than a blank panel.
+
+The tab fetches the patient's data from cBioPortal **in the browser**, under
+the signed-in user's own session, then posts it to the risk service. The
+service is never given a study or sample id and has no route to the portal, so
+it holds no credentials and cannot be used to read a patient the user is not
+entitled to see. It is also stateless: no database, no request logging of
+payloads, nothing written after startup.
+
+One caveat about the demo study. The model needs MSK-IMPACT features (TMB, MSI
+score, fraction of genome altered, discrete CNA), and `lgg_ucsf_2014` has
+almost none of them, so the tab will correctly report most inputs as missing.
+For a demo that exercises the model, set `DATAHUB_STUDY=msk_chord_2024` in
+[`.env`](.env), re-run `./init.sh` and import it: same panel family as the
+training cohort, 25,040 patients the model has never seen.
+
 ## Adding studies
 
 `init.sh` downloads one demo study. To add another, put its directory under

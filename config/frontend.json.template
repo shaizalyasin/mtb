@@ -15,7 +15,11 @@
         "",
         "'unmountOnHide': true is deliberate -- it makes switching tabs actually",
         "unmount the tab, so the bundle's teardown path is exercised rather than",
-        "left untested."
+        "left untested.",
+        "",
+        "Both tabs point at the same two files. custom_tabs loads one script per",
+        "entry, and because the URL is identical the browser fetches it once; two",
+        "separate bundles would each ship their own copy of React."
     ],
     "custom_tabs": [
         {
@@ -26,6 +30,31 @@
             "pathsToJs": ["__MTB_TOOLS_BASE_URL__/mtb-tools.js"],
             "pathsToCSS": ["__MTB_TOOLS_BASE_URL__/mtb-tools.css"],
             "customParameters": {},
+            "unmountOnHide": true
+        },
+        {
+            "_comment": [
+                "Needs the risk overlay running:",
+                "  docker compose -f docker-compose.yml -f risk/docker-compose.yml up -d",
+                "Without it the tab loads and reports that the service is",
+                "unreachable, which is the intended behaviour rather than a blank",
+                "panel.",
+                "",
+                "riskBaseUrl is the origin the BROWSER uses, not a compose service",
+                "name. In this stack the service has its own port, so init.sh",
+                "renders an absolute URL. Behind the auth proxy it would be '/risk'",
+                "and share the portal's origin."
+            ],
+            "id": "openResource_mtbPrognosis",
+            "title": "Prognosis",
+            "location": "PATIENT_PAGE",
+            "mountCallbackName": "renderMtbPrognosisTab",
+            "pathsToJs": ["__MTB_TOOLS_BASE_URL__/mtb-tools.js"],
+            "pathsToCSS": ["__MTB_TOOLS_BASE_URL__/mtb-tools.css"],
+            "customParameters": {
+                "riskBaseUrl": "__MTB_RISK_BASE_URL__",
+                "apiBase": "/api"
+            },
             "unmountOnHide": true
         }
     ]

@@ -77,9 +77,11 @@ fi
 # resolves outside the compose network. Rendering it here, rather than
 # committing a fixed one, means changing MTB_TOOLS_PORT cannot leave the tab
 # pointing at a dead port.
-sed "s|__MTB_TOOLS_BASE_URL__|${MTB_TOOLS_BASE_URL}|g" \
+sed -e "s|__MTB_TOOLS_BASE_URL__|${MTB_TOOLS_BASE_URL}|g" \
+    -e "s|__MTB_RISK_BASE_URL__|${MTB_RISK_BASE_URL:-http://localhost:9092}|g" \
     config/frontend.json.template > config/frontend.json
 echo "Wrote config/frontend.json (bundle at ${MTB_TOOLS_BASE_URL})"
+echo "  Prognosis tab points at ${MTB_RISK_BASE_URL:-http://localhost:9092}"
 
 echo
 echo "Done. Next:"

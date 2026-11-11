@@ -1,0 +1,39 @@
+# The survival risk model behind the Prognosis tab.
+#
+#   docker compose -f docker-compose.yml -f risk/docker-compose.yml up -d --build
+#
+# An overlay rather than part of the base stack, for the same reason auth/ is:
+# the base demo answers one question (can MTB features be decoupled from the
+# fork) and should stay runnable without anything that is not needed to answer
+# it. Without this overlay the Prognosis tab still loads and reports that the
+# service is unreachable.
+#
+# The service is stateless. It has no volume because it writes nothing: no
+# database, no session store, no request logging of payloads. Patient data
+# exists only for the lifetime of a request.
+#
+# It is also given no route to cBioPortal, deliberately. The tab fetches the
+# patient's data from the portal in the browser, under the signed-in user's own
+# session, and posts it here. A service that could query the portal itself
+# would need its own credentials and would become a way around the portal's
+# access control.
+
+services:
+    mtb-risk:
+        build:
+            context: ${MTB_RISK_CONTEXT:-https://github.com/shaizalyasin/mtb-survival-model.git}
+        image: mtb-survival-model:local
+        container_name: mtb-risk
+        restart: unless-stopped
+        ports:
+            - '${MTB_RISK_PORT:-9092}:8000'
+        environment:
+            # The portal's origin, which is where the Prognosis tab runs. Listed
+            # explicitly rather than '*': a wildcard would let any page the
+            # clinician happens to visit post patient payloads here.
+            MTB_CORS_ORIGINS: '${PUBLIC_URL:-http://localhost:9090}'
+        read_only: true
+        tmpfs:
+            - /tmp
+        networks:
+            - mtb-net
