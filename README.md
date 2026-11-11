@@ -26,7 +26,7 @@ cd mtb
 ```
 
 ```bash
-./init.sh                       # schema, seed database and a demo study (~25MB)
+./init.sh                       # schema, seed database and the demo studies
 docker compose up -d --build    # first boot seeds the database, a few minutes
 ./import-study.sh               # cBioPortal will not render with zero studies
 ```
@@ -170,17 +170,38 @@ For a demo that exercises the model, set `DATAHUB_STUDY=msk_chord_2024` in
 [`.env`](.env), re-run `./init.sh` and import it: same panel family as the
 training cohort, 25,040 patients the model has never seen.
 
-## Adding studies
+## Studies
 
-`init.sh` downloads one demo study. To add another, put its directory under
-`study/` and import it:
+A portal holds as many studies as you import and lists them all on its home
+page. `DATAHUB_STUDY` in [`.env`](.env) is a space-separated **list**, and
+`init.sh` downloads every entry while `import-study.sh` imports every entry:
 
 ```bash
-./import-study.sh <study-id>
+./init.sh                                  # downloads all of them
+./import-study.sh                          # imports all of them
+./import-study.sh lgg_ucsf_2014            # or just the ones you name
 ```
 
-Import runs cBioPortal's own `metaImport.py` inside the portal container, so a
-study that imports there imports here.
+The default list is deliberately two studies that behave differently, because
+the contrast is the useful part:
+
+| study | size | what the Prognosis tab does with it |
+| --- | --- | --- |
+| `lgg_ucsf_2014` | 0.7 MB | No MSI, no FGA, no CNA profile, so the tab reports most inputs as missing. Worth seeing: that is what an unsuitable study looks like, rather than a confident wrong answer. |
+| `msk_chord_2024` | 45 MB, 25,040 patients | Same MSK-IMPACT panel family as the model's training cohort, patients it has never seen. The tab works properly. |
+
+The second one takes a while to import. Drop it from the list if you only want
+the base demo running quickly, and add it back when you want the Prognosis tab
+to do something.
+
+To add any other study, put its directory under `study/` or add its id to the
+list and re-run `./init.sh`. Import runs cBioPortal's own `metaImport.py`
+inside the portal container, so a study that imports there imports here. A
+failure on one study does not abandon the others; the script reports which
+ones failed and exits non-zero.
+
+`verify.sh` takes a single study and defaults to the **first** entry in the
+list, or to `VERIFY_STUDY_ID` if you set one.
 
 `study/` and `data/` are not committed.
 

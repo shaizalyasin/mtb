@@ -63,15 +63,21 @@ else
         "https://github.com/cBioPortal/datahub/raw/master/seedDB/${SEED_FILE}"
 fi
 
-if [ -d "study/${DATAHUB_STUDY}" ]; then
-    echo "study/${DATAHUB_STUDY} exists, skipping"
-else
-    echo "Downloading study ${DATAHUB_STUDY}..."
-    curl -fL --progress-bar -o "study/${DATAHUB_STUDY}.tar.gz" \
-        "https://datahub.assets.cbioportal.org/${DATAHUB_STUDY}.tar.gz"
-    tar xzf "study/${DATAHUB_STUDY}.tar.gz" -C study
-    rm -f "study/${DATAHUB_STUDY}.tar.gz"
-fi
+# DATAHUB_STUDY is a list, not a single value. cBioPortal hosts as many studies
+# as you import, so there is no reason to pick one: the point of listing
+# several is that a small study and a richly annotated one can sit side by side
+# and the tabs can be compared against both.
+for study in ${DATAHUB_STUDY}; do
+    if [ -d "study/${study}" ]; then
+        echo "study/${study} exists, skipping"
+        continue
+    fi
+    echo "Downloading study ${study}..."
+    curl -fL --progress-bar -o "study/${study}.tar.gz" \
+        "https://datahub.assets.cbioportal.org/${study}.tar.gz"
+    tar xzf "study/${study}.tar.gz" -C study
+    rm -f "study/${study}.tar.gz"
+done
 
 # The bundle is fetched by the *browser*, so frontend.json needs a URL that
 # resolves outside the compose network. Rendering it here, rather than
