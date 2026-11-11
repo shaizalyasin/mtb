@@ -200,6 +200,28 @@ inside the portal container, so a study that imports there imports here. A
 failure on one study does not abandon the others; the script reports which
 ones failed and exits non-zero.
 
+### Gene panels
+
+A panel-sequenced study carries a gene panel matrix, and cBioPortal requires
+each panel it names to already exist in the database. The seed database ships
+none, so importing such a study otherwise dies partway through with:
+
+```
+java.lang.RuntimeException: Gene panel cannot be found in database: IMPACT468
+```
+
+[`import-gene-panels.sh`](import-gene-panels.sh) handles this and
+`import-study.sh` calls it first, so normally there is nothing to do. It reads
+which panels a study needs out of the study's own matrix rather than from a
+hardcoded list, because the list is not guessable: `msk_chord_2024` uses five,
+and their file names do not follow their ids (`IMPACT-HEME-400` lives in
+`data_gene_panel_heme400.txt`).
+
+The definitions come from the cBioPortal datahub, where they are stored with
+git-lfs. A `raw.githubusercontent.com` request returns a 129-byte LFS pointer
+rather than the file, so they are fetched from the media endpoint instead.
+They land in `study/_gene_panels/`, which is not committed.
+
 `verify.sh` takes a single study and defaults to the **first** entry in the
 list, or to `VERIFY_STUDY_ID` if you set one.
 

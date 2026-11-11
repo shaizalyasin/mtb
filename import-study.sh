@@ -37,6 +37,14 @@ if ! curl -sf "http://localhost:${PORT}/api/studies" >/dev/null 2>&1; then
     exit 1
 fi
 
+# A study's gene panel matrix references panels that must already exist in the
+# database, and the seed ships none. Without this, importing a study that uses
+# panels dies partway through with "Gene panel cannot be found in database".
+# Safe to re-run: it imports only what is missing.
+echo
+echo "=== Gene panels ==="
+./import-gene-panels.sh ${STUDIES}
+
 failed=""
 for study in ${STUDIES}; do
     if [ ! -d "study/${study}" ]; then
