@@ -157,11 +157,31 @@ Without the overlay the tab still appears and reports that the service is
 unreachable, which is the intended behaviour rather than a blank panel.
 
 The tab fetches the patient's data from cBioPortal **in the browser**, under
-the signed-in user's own session, then posts it to the risk service. The
-service is never given a study or sample id and has no route to the portal, so
-it holds no credentials and cannot be used to read a patient the user is not
-entitled to see. It is also stateless: no database, no request logging of
-payloads, nothing written after startup.
+the signed-in user's own session, reduces it to the fields the model reads, and
+posts that to the risk service. The service is never given a study, patient or
+sample id and has no route to the portal, so it holds no credentials and cannot
+be used to read a patient the user is not entitled to see. It is also
+stateless: no database, no request logging of payloads, nothing written after
+startup.
+
+That claim is a test, not a comment:
+
+```bash
+./risk/verify-risk.sh          # 12/12
+```
+
+It drives a real browser the way `verify.sh` does, and among the twelve checks
+it reads the actual POST body the page sends and fails if a study, patient or
+sample identifier appears anywhere in it. It also asserts that the displayed
+percentile equals the one the service returned, that a study missing inputs
+says so rather than answering confidently, and that an unreachable service
+shows an error instead of a blank panel.
+
+The first version of the tab failed that identifier check: cBioPortal's REST
+responses carry `studyId`, `patientId` and `sampleId` on every row, and
+forwarding them verbatim meant the service was being handed an identified
+record all along. The payload is now reduced in the browser before it leaves
+the page.
 
 One caveat about the demo study. The model needs MSK-IMPACT features (TMB, MSI
 score, fraction of genome altered, discrete CNA), and `lgg_ucsf_2014` has
