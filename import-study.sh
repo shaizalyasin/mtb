@@ -20,6 +20,19 @@ else
 fi
 PORT="${CBIOPORTAL_PORT:-9090}"
 
+# Smallest first. cBioPortal renders as soon as one study is in, and a large
+# study can take hours, so this is the difference between a usable portal in
+# ten minutes and one in three hours. Nothing here depends on import order.
+order_by_size() {
+    local study size
+    for study in "$@"; do
+        size=0
+        [ -d "study/${study}" ] && size=$(du -sm "study/${study}" | cut -f1)
+        printf '%s\t%s\n' "${size}" "${study}"
+    done | sort -n | cut -f2
+}
+STUDIES="$(order_by_size ${STUDIES} | tr '\n' ' ')"
+
 # `docker compose up -d` returns within seconds, but the database spends several
 # minutes loading the seed and the portal does not answer until that finishes.
 # Without this wait, running the documented steps back to back fails.
@@ -45,7 +58,32 @@ echo
 echo "=== Gene panels ==="
 ./import-gene-panels.sh ${STUDIES}
 
+# cBioPortal's segment importer inserts one row per database round trip, and a
+# large .seg file is millions of rows: msk_chord_2024 spends about two and a
+# half hours in that single step, printing nothing at all while it does. It is
+# indistinguishable from a hang unless we say so first.
+warn_if_slow() {
+    local study="$1" seg mb
+    seg=$(ls "study/${study}"/*.seg 2>/dev/null | head -1) || return 0
+    [ -n "${seg}" ] || return 0
+    mb=$(du -m "${seg}" | cut -f1)
+    [ "${mb}" -ge 20 ] || return 0
+    echo "    $(basename "${seg}") is ${mb} MB. Segment data loads one row per"
+    echo "    round trip, so expect hours, most of it with no output at all."
+    echo "    That is normal. Nothing is hung."
+}
+
+# Proof of life during the silent stretches.
+heartbeat() {
+    local started
+    started=$(date +%s)
+    while sleep 120; do
+        echo "    ... still importing, $(( ($(date +%s) - started) / 60 )) min elapsed" >&2
+    done
+}
+
 failed=""
+imported=""
 for study in ${STUDIES}; do
     if [ ! -d "study/${study}" ]; then
         echo "study/${study} is not present. Run ./init.sh, or add it to" >&2
@@ -56,14 +94,30 @@ for study in ${STUDIES}; do
 
     echo
     echo "=== Importing ${study} ==="
+    warn_if_slow "${study}"
+
+    # The portal renders as soon as it has one study, so there is no need to
+    # wait at the terminal for a long one to finish.
+    if [ -n "${imported}" ]; then
+        echo "    The portal is already usable at http://localhost:${PORT}"
+        echo "    with:${imported}"
+    fi
+
+    heartbeat &
+    hb=$!
+
     # A failure on one study should not abandon the rest, so the loop records
     # it and carries on rather than letting set -e end the script.
     if docker compose exec -T cbioportal metaImport.py -s "/study/${study}" -o -n; then
         echo "Imported ${study}."
+        imported="${imported} ${study}"
     else
         echo "Import of ${study} FAILED." >&2
         failed="${failed} ${study}"
     fi
+
+    kill "${hb}" 2>/dev/null || true
+    wait "${hb}" 2>/dev/null || true
 done
 
 echo

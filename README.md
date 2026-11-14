@@ -190,9 +190,29 @@ the contrast is the useful part:
 | `lgg_ucsf_2014` | 0.7 MB | No MSI, no FGA, no CNA profile, so the tab reports most inputs as missing. Worth seeing: that is what an unsuitable study looks like, rather than a confident wrong answer. |
 | `msk_chord_2024` | 45 MB, 25,040 patients | Same MSK-IMPACT panel family as the model's training cohort, patients it has never seen. The tab works properly. |
 
-The second one takes a while to import. Drop it from the list if you only want
-the base demo running quickly, and add it back when you want the Prognosis tab
-to do something.
+**`msk_chord_2024` takes about three hours to import.** Roughly two and a half
+of those are a single step, `ImportCopyNumberSegmentData`, loading the 63 MB
+`data_cna_hg19.seg` one row per database round trip. It prints nothing while it
+runs. The database is barely working during it: MySQL here handles 136,000
+inserts a second server-side, but only about 550 when each one is a separate
+statement from a client, which is what the importer does. So this is the
+importer's design, not your hardware, and no MySQL tuning changes it.
+
+Two things make that bearable rather than alarming. `import-study.sh` prints a
+warning before any study with a large `.seg` file and a heartbeat every two
+minutes, so a silent stretch is visibly still alive. And the studies import
+smallest first, so the portal is usable at <http://localhost:9090> with
+`lgg_ucsf_2014` about ten minutes in, while the big one continues. You do not
+have to sit at the terminal.
+
+It is also a one-time cost per machine. `docker compose down` keeps the
+database; only `down -v` discards it and forces a re-import.
+
+The seg file cannot simply be skipped: `data_clinical_sample.txt` carries
+`MSI_SCORE`, `MSI_TYPE` and `TMB_NONSYNONYMOUS`, but **not**
+`FRACTION_GENOME_ALTERED`, which the importer derives from the segments. FGA is
+one of the model's clinical features, so dropping the file would quietly cost
+the Prognosis tab an input.
 
 To add any other study, put its directory under `study/` or add its id to the
 list and re-run `./init.sh`. Import runs cBioPortal's own `metaImport.py`
