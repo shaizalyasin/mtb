@@ -89,3 +89,86 @@ jobs:
             *.png
             compose-logs.txt
           if-no-files-found: ignore
+
+  # The Prognosis tab and the risk service behind it. A separate job rather
+  # than more steps above, because the base demo has to stay provable without
+  # the overlay: if the model service breaks, 'verify' must still go green on
+  # its own, which is the whole claim risk/ is an overlay at all.
+  #
+  # Among its twelve checks is the one that matters most and cannot be argued
+  # in prose: it reads the POST body the page actually sends and fails if a
+  # study, patient or sample identifier appears anywhere in it.
+  verify-risk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out the deployment repo
+        uses: actions/checkout@v4
+
+      - name: Check out the bundle repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.MTB_TOOLS_REPO || format('{0}/mtb-clinical-tools', github.repository_owner) }}
+          ref: ${{ vars.MTB_TOOLS_REF || 'main' }}
+          path: mtb-clinical-tools
+
+      # The model and its artifacts are committed there, so nothing is trained
+      # here. The image build is a pip install.
+      - name: Check out the model repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.MTB_RISK_REPO || format('{0}/mtb-survival-model', github.repository_owner) }}
+          ref: ${{ vars.MTB_RISK_REF || 'main' }}
+          path: mtb-survival-model
+
+      - name: Point the deployment at the checked-out repos
+        run: |
+          set -a && . ./.env && set +a
+          {
+            echo "MTB_TOOLS_CONTEXT=./mtb-clinical-tools"
+            echo "MTB_RISK_CONTEXT=./mtb-survival-model"
+            echo "DATAHUB_STUDY=${VERIFY_STUDY_ID:-${DATAHUB_STUDY%% *}}"
+          } >> .env
+          tail -3 .env
+
+      - name: Override the cBioPortal image
+        if: inputs.cbioportal_image != ''
+        run: |
+          sed -i "s|^DOCKER_IMAGE_CBIOPORTAL=.*|DOCKER_IMAGE_CBIOPORTAL=${{ inputs.cbioportal_image }}|" .env
+          grep '^DOCKER_IMAGE_CBIOPORTAL=' .env
+
+      - name: Download schema, seed database and demo study
+        run: ./init.sh
+
+      - name: Start the stack with the risk overlay
+        run: |
+          docker compose -f docker-compose.yml -f risk/docker-compose.yml \
+            up -d --build --wait --wait-timeout 1200
+
+      - name: Import the demo study
+        run: ./import-study.sh
+
+      - name: Wait for the portal
+        run: |
+          set -a && . ./.env && set +a
+          timeout 300 bash -c "until curl -sf http://localhost:${CBIOPORTAL_PORT}/api/studies >/dev/null; do sleep 5; done"
+
+      - name: Verify the Prognosis tab
+        run: ./risk/verify-risk.sh
+
+      - name: Collect diagnostics
+        if: failure()
+        run: |
+          docker compose -f docker-compose.yml -f risk/docker-compose.yml \
+            logs --tail 300 > compose-logs.txt || true
+
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-risk-output
+          path: |
+            *.png
+            compose-logs.txt
+          if-no-files-found: ignore

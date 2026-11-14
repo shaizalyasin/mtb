@@ -187,6 +187,10 @@ forwarding them verbatim meant the service was being handed an identified
 record all along. The payload is now reduced in the browser before it leaves
 the page.
 
+This runs in CI as its own job, next to the base one. Separate rather than
+combined on purpose: if the model service breaks, the base demo still has to go
+green on its own, which is what calling `risk/` an overlay is supposed to mean.
+
 One caveat about the demo study. The model needs MSK-IMPACT features (TMB, MSI
 score, fraction of genome altered, discrete CNA), and `lgg_ucsf_2014` has
 almost none of them, so the tab will correctly report most inputs as missing.
