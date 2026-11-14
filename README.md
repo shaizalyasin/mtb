@@ -89,6 +89,10 @@ The same suite runs in CI on every push, and can be pointed at any cBioPortal
 image tag from the Actions tab, which is how an upgrade would be evaluated
 before committing to it.
 
+CI imports only the one study it verifies, not the whole `DATAHUB_STUDY` list.
+`verify.sh` drives a single study anyway, and the large one costs three hours
+(see [Studies](#studies)) while proving nothing the small one does not.
+
 ## How the injection works
 
 `custom_tabs` is JavaScript injection into cBioPortal's own page, not an iframe:

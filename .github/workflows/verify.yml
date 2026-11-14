@@ -47,6 +47,18 @@ jobs:
           sed -i "s|^DOCKER_IMAGE_CBIOPORTAL=.*|DOCKER_IMAGE_CBIOPORTAL=${{ inputs.cbioportal_image }}|" .env
           grep '^DOCKER_IMAGE_CBIOPORTAL=' .env
 
+      # CI verifies the mount contract, and that takes exactly one study: the
+      # one verify.sh drives. The default list in .env also carries
+      # msk_chord_2024, 333 MB of data files and a three-hour import. It is
+      # there so the Prognosis tab has real MSK-IMPACT inputs to score locally.
+      # It proves nothing here that the small study does not, and no CI budget
+      # can hold it.
+      - name: Import only the study being verified
+        run: |
+          set -a && . ./.env && set +a
+          echo "DATAHUB_STUDY=${VERIFY_STUDY_ID:-${DATAHUB_STUDY%% *}}" >> .env
+          grep '^DATAHUB_STUDY=' .env
+
       - name: Download schema, seed database and demo study
         run: ./init.sh
 
